@@ -1,11 +1,38 @@
 import { WebSocket, WebSocketServer } from "ws";
+import {v4 as uuid} from 'uuid';
 
 const wss = new WebSocketServer ({port :8080}) ;
+const waitingque =[];
+const ActivePair = new Map();
+const clients = new Map();
+
 
 //connection 
 //hello
 wss.on("connection",(socket, request)=>{
     const ip = request.socket.remoteAddress;
+    socket.userId=uuid();
+    clients.set(socket.userId,socket);
+    
+    if ( waitingque.length >0){
+        const roomId = uuid();
+        const pairedUserId = waitingque.shift();
+
+        const pairedSocket = clients.get(pairedUserId);
+        
+        
+        ActivePair.set(pairedUserId,socket.userId);
+        ActivePair.set(socket.userId,pairedUserId);
+
+        socket.send(`You are paired with user ${pairedUserId} in room ${roomId}`);
+        socket.send(JSON.stringify({roomId, pairedUserId}));
+
+        pairedSocket.send(`You are paired with user ${socket.userId} in room ${roomId}`);
+
+        pairedSocket.send(JSON.stringify({roomId, pairedUserId: socket.userId}));
+    }else{
+        waitingque.push(socket.userId);
+    }
 
     socket.on('message', (rawData)=>{
         const msg = rawData.toString();

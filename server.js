@@ -9,6 +9,8 @@ const clients = new Map();
 
 //connection 
 //hello
+if (waitingque.includes(socket.userId)) return; 
+
 wss.on("connection",(socket, request)=>{
     const ip = request.socket.remoteAddress;
     socket.userId=uuid();
